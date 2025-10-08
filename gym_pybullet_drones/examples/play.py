@@ -9,6 +9,8 @@ from gym_pybullet_drones.envs.MultiHoverAviary import MultiHoverAviary
 from gym_pybullet_drones.utils.enums import ObservationType, ActionType
 from gym_pybullet_drones.utils.utils import sync
 from gym_pybullet_drones.utils.Logger import Logger
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 DEFAULT_MODEL_PATH = "results/best_model.zip"
 DEFAULT_GUI = True
@@ -76,10 +78,6 @@ def play(model_path=DEFAULT_MODEL_PATH, multiagent=DEFAULT_MA, gui=DEFAULT_GUI):
     logger.plot()
 
     # ---- Added: Trajectory plotting ----
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
-    import numpy as np
-    import os
 
     data = logger.data
     states = np.array(data['states'][0])
