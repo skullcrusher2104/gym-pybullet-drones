@@ -75,6 +75,33 @@ def play(model_path=DEFAULT_MODEL_PATH, multiagent=DEFAULT_MA, gui=DEFAULT_GUI):
     env.close()
     logger.plot()
 
+    # ---- Added: Trajectory plotting ----
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+    import numpy as np
+    import os
+
+    data = logger.data
+    states = np.array(data['states'][0])
+    timestamps = np.array(data['timestamps'])
+    x, y, z = states[:, 0], states[:, 1], states[:, 2]
+
+    fig = plt.figure(figsize=(7, 7))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(x, y, z, linewidth=2, label="Trajectory")
+    ax.scatter(x[0], y[0], z[0], color='green', s=50, label='Start')
+    ax.scatter(x[-1], y[-1], z[-1], color='red', s=50, label='End')
+    ax.set_xlabel("X (m)")
+    ax.set_ylabel("Y (m)")
+    ax.set_zlabel("Z (m)")
+    ax.legend()
+    plt.title("Drone 3D Trajectory")
+
+    output_path = os.path.join("logs_playback", "trajectory.png")
+    plt.savefig(output_path, dpi=200, bbox_inches='tight')
+    print(f"[INFO] Saved trajectory plot at: {output_path}")
+    plt.show()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a trained PPO policy in PyBullet drones environment.")
     parser.add_argument('--model_path', type=str, default=DEFAULT_MODEL_PATH, help='Path to saved policy zip file')
