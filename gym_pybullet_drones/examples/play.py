@@ -39,6 +39,9 @@ def play(model_path=DEFAULT_MODEL_PATH, multiagent=DEFAULT_MA, gui=DEFAULT_GUI):
                     output_folder="logs_playback/",
                     colab=False)
 
+    # ---- Track trajectory separately ----
+    trajectory = []
+
     #### Run the simulation ####
     obs, _ = env.reset(seed=42, options={})
     start = time.time()
@@ -49,6 +52,18 @@ def play(model_path=DEFAULT_MODEL_PATH, multiagent=DEFAULT_MA, gui=DEFAULT_GUI):
 
         obs2 = obs.squeeze()
         act2 = action.squeeze()
+
+        # Record position
+        if not multiagent:
+            pos = obs2[0:3]
+        else:
+            pos = obs2[0][0:3]  # track first drone
+        trajectory.append(pos)
+
+        # ---- Debugging info ----
+        if i % int(env.CTRL_FREQ) == 0:  # print every 1 sec
+            print(f"[DEBUG] Step {i}: Position = {pos}, Terminated = {terminated}")
+
 
         if DEFAULT_OBS == ObservationType.KIN:
             if not multiagent:
@@ -77,28 +92,27 @@ def play(model_path=DEFAULT_MODEL_PATH, multiagent=DEFAULT_MA, gui=DEFAULT_GUI):
     env.close()
     logger.plot()
 
-    # ---- Added: Trajectory plotting ----
+    # ---- Trajectory plotting ----
+    trajectory = np.array(trajectory)
+    if trajectory.size == 0:
+        print(f"[WARNING] No trajectory data collected. Cannot plot.")
+    else:
+        x, y, z = trajectory[:,0], trajectory[:,1], trajectory[:,2]
+        fig = plt.figure(figsize=(7,7))
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot(x, y, z, linewidth=2, label="Trajectory")
+        ax.scatter(x[0], y[0], z[0], color='green', s=50, label='Start')
+        ax.scatter(x[-1], y[-1], z[-1], color='red', s=50, label='End')
+        ax.set_xlabel("X (m)")
+        ax.set_ylabel("Y (m)")
+        ax.set_zlabel("Z (m)")
+        ax.legend()
+        plt.title("Drone 3D Trajectory")
 
-    data = logger.data
-    states = np.array(data['states'][0])
-    timestamps = np.array(data['timestamps'])
-    x, y, z = states[:, 0], states[:, 1], states[:, 2]
-
-    fig = plt.figure(figsize=(7, 7))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot(x, y, z, linewidth=2, label="Trajectory")
-    ax.scatter(x[0], y[0], z[0], color='green', s=50, label='Start')
-    ax.scatter(x[-1], y[-1], z[-1], color='red', s=50, label='End')
-    ax.set_xlabel("X (m)")
-    ax.set_ylabel("Y (m)")
-    ax.set_zlabel("Z (m)")
-    ax.legend()
-    plt.title("Drone 3D Trajectory")
-
-    output_path = os.path.join("logs_playback", "trajectory.png")
-    plt.savefig(output_path, dpi=200, bbox_inches='tight')
-    print(f"[INFO] Saved trajectory plot at: {output_path}")
-    plt.show()
+        output_path = os.path.join("logs_playback", "trajectory.png")
+        plt.savefig(output_path, dpi=200, bbox_inches='tight')
+        plt.show()
+        print(f"[INFO] Saved trajectory plot at: {output_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a trained PPO policy in PyBullet drones environment.")
